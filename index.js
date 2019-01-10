@@ -1,6 +1,8 @@
 /* ********************
 Data Stores
 ******************** */
+const petFinderApiKey = '78b9651adad85f0ed7fc2ebfe786900d';
+
 const store = {
     isSearchStart: true,
     hasError: false,
@@ -13,6 +15,29 @@ const store = {
 /* ********************
 Application Tasks
 ******************** */
+function formatQueryParams(params) {
+    const queryItems = Object.keys(params)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+      console.log(queryItems);
+    return queryItems.join('&');
+  }
+
+function getAdoptions() {
+    console.log(`getAdoptions ran`);
+    const query = BREEDS[store.breedQuery].adoptionBreed;
+        const params = {
+            key: petFinderApiKey,
+            format: "json",
+            output: "basic",
+            count: "10",
+            breed: store.breedQuery,
+            location: store.zipQuery
+        };
+        const queryString = formatQueryParams(params);
+        const url = 'https://api.petfinder.com/pet.find?' + queryString + '&callback=?';
+        console.log(url);
+}
+
 function saveErrorEvent(err) {
     store.hasError = true;
     store.error.push(err);
@@ -20,7 +45,7 @@ function saveErrorEvent(err) {
     render();
 }
 
-function saveQueryEvent(breed, zip) {
+function saveQuery(breed, zip) {
     store.breedQuery = breed;
     store.zipQuery = zip;
 
@@ -31,6 +56,7 @@ function saveQueryEvent(breed, zip) {
 
 function saveSearchEvent() {
     store.isSearchStart = false;
+    store.hasError = false;
 }
 
 function validateBreed() {
@@ -103,7 +129,7 @@ function handleFormSubmit() {
         let breed = $('#query').val();
         let zip = $('#zip').val();
         
-        saveQueryEvent(breed, zip);
+        saveQuery(breed, zip);
 
         let hasValidBreed = validateBreed();
         let hasValidZip = validateZipCode();
@@ -116,6 +142,9 @@ function handleFormSubmit() {
         if(!hasValidZip) {
             err = 'Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.';
             saveErrorEvent(err);
+        }
+        if(hasValidBreed && hasValidZip) {
+            getAdoptions();
         }
     });
 }
