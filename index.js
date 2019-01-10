@@ -6,6 +6,7 @@ const petFinderApiKey = '78b9651adad85f0ed7fc2ebfe786900d';
 const store = {
     isSearchStart: true,
     hasError: false,
+    hasResults: false,
     breedQuery: null,
     zipQuery: null,
     error: []
@@ -37,20 +38,40 @@ function getAdoptions() {
         const url = 'https://api.petfinder.com/pet.find?' + queryString + '&callback=?';
         console.log(url);
         $.getJSON(url).then(function checkAdoptionResults(responseJson) {
-            if(hasAdoptionResults(responseJson)) {
-                console.log(`We have adoption records`);
-                
+            console.log(`checking for adoption results`);
+            let err = '';
+            if(responseJson.petfinder.hasOwnProperty('pets')) {
+                if(responseJson.petfinder.pets.hasOwnProperty('pet') && responseJson.petfinder.pets.pet !== undefined && responseJson.petfinder.pets.pet !== null) {
+                    console.log(`We have adoption records`);
+                    saveAdoptions(responseJson);
+
+                }
+                else {
+                    console.log(`We do not have adoption results`);
+                    err = 'Sorry, we had trouble retrieving adoptions. Please try again.';
+                    saveErrorEvent(err);
+                }
             }
             else {
                 console.log(`We do not have adoption results`);
+                if(responseJson.petfinder.hasOwnProperty('header')) {
+                    err = `${responseJson.petfinder.header.status.message.$t}. Please try again.`;
+                    saveErrorEvent(err);
+                }
+                else {
+                    err = 'Sorry, we had trouble retrieving adoptions. Please try again.';
+                    saveErrorEvent(err);
+                }
                 
             }
         })
 }
 
-function hasAdoptionResults(responseJson) {
-    console.log(`checking for adoption results`);
-    return (responseJson.petfinder.pets.pet !== undefined ? true : false);
+function saveAdoptions(responseJson) {
+    
+    store.hasResults = true;
+
+    render();
 }
 
 function saveErrorEvent(err) {
@@ -72,6 +93,7 @@ function saveQuery(breed, zip) {
 function saveSearchEvent() {
     store.isSearchStart = false;
     store.hasError = false;
+    store.hasResults = false;
 }
 
 function validateBreed() {
@@ -115,7 +137,8 @@ HTML Render
 function render() { 
     console.log(`Application state:
     isSearchStart = ${store.isSearchStart}
-    hasError = ${store.hasError}`);
+    hasError = ${store.hasError}
+    hasResults = ${store.hasResults}`);
     if (store.isSearchStart) {
         console.log(`isSearch start, render`);
         $('.js-query').html(generateBreedDropDown());
@@ -123,6 +146,10 @@ function render() {
     else if(store.hasError) {
         console.log(`hasError, render`);
         $('.js-response').html(generateErrorHtml());
+    }
+    else if(store.hasResults) {
+        console.log(`hasResults, render`);
+
     }
     else {
         console.log(`nothing to render, no change`);
