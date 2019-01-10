@@ -5,7 +5,8 @@ const store = {
     isSearchStart: true,
     hasQueryError: false,
     breedQuery: null,
-    zipQuery: null
+    zipQuery: null,
+    queryErr: []
 };
 
 
@@ -18,13 +19,27 @@ function processForm() {
     zip: ${store.zipQuery}
     valid zip code?: ${validateZipCode()}`);
 
+    if(validateBreed()) {
+        store.hasQueryError = false;
+    }
+    else {
+        store.hasQueryError = true;
+        store.queryErr.push('Sorry, something went wrong. Please try your search again.');
+    }
+
     if(validateZipCode()) {
         store.hasQueryError = false;
     }
     else {
         store.hasQueryError = true;
+        store.queryErr.push('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.')
     }
-    console.log(`Query Error?: ${store.hasQueryError}`);
+    console.log(`Query Error?: ${store.hasQueryError}
+    Query Error Messages: ${store.queryErr}`);
+}
+
+function validateBreed() {
+    return (store.breedQuery >= 0 && store.breedQuery < BREEDS.length ? true : false);
 }
 
 function validateZipCode() {
@@ -73,6 +88,7 @@ function handleFormSubmit() {
     $('form').submit(event => {
         event.preventDefault();
         console.log(`handleFormSubmit ran`);
+        //TODO: split into a save function
         store.breedQuery = $('#query').val();
         store.zipQuery = $('#zip').val();
         store.isSearchStart = false;
