@@ -3,39 +3,34 @@ Data Stores
 ******************** */
 const store = {
     isSearchStart: true,
-    hasQueryError: false,
+    hasError: false,
     breedQuery: null,
     zipQuery: null,
-    queryErr: []
+    error: []
 };
 
 
 /* ********************
 Application Tasks
 ******************** */
-function processForm() {
-    console.log(`processForm ran
+function saveErrorEvent(err) {
+    store.hasError = true;
+    store.error.push(err);
+
+    render();
+}
+
+function saveQueryEvent(breed, zip) {
+    store.breedQuery = breed;
+    store.zipQuery = zip;
+
+    console.log(`saveQuery ran,
     breed: ${store.breedQuery}
-    zip: ${store.zipQuery}
-    valid zip code?: ${validateZipCode()}`);
+    zip: ${store.zipQuery}`);
+}
 
-    if(validateBreed()) {
-        store.hasQueryError = false;
-    }
-    else {
-        store.hasQueryError = true;
-        store.queryErr.push('Sorry, something went wrong. Please try your search again.');
-    }
-
-    if(validateZipCode()) {
-        store.hasQueryError = false;
-    }
-    else {
-        store.hasQueryError = true;
-        store.queryErr.push('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.')
-    }
-    console.log(`Query Error?: ${store.hasQueryError}
-    Query Error Messages: ${store.queryErr}`);
+function saveSearchEvent() {
+    store.isSearchStart = false;
 }
 
 function validateBreed() {
@@ -63,16 +58,30 @@ function generateBreedDropDown() {
     return dropDownHtml;
 }
 
+function generateErrorHtml() {
+    let err = store.error.join(`</p><p class="error">`);
+    let html = `<section role="region" class="js-errors row">
+    <p class="error">${err}</p>
+    </section>`;
+
+    return html;
+}
+
 
 /* ********************
 HTML Render
 ******************** */
 function render() { 
     console.log(`Application state:
-    isSearchStart = ${store.isSearchStart}`);
+    isSearchStart = ${store.isSearchStart}
+    hasError = ${store.hasError}`);
     if (store.isSearchStart) {
         console.log(`isSearch start, render`);
         $('.js-query').html(generateBreedDropDown());
+    }
+    else if(store.hasError) {
+        console.log(`hasError, render`);
+        $('.js-response').html(generateErrorHtml());
     }
     else {
         console.log(`nothing to render, no change`);
@@ -88,11 +97,26 @@ function handleFormSubmit() {
     $('form').submit(event => {
         event.preventDefault();
         console.log(`handleFormSubmit ran`);
-        //TODO: split into a save function
-        store.breedQuery = $('#query').val();
-        store.zipQuery = $('#zip').val();
-        store.isSearchStart = false;
-        processForm();
+
+        saveSearchEvent();
+
+        let breed = $('#query').val();
+        let zip = $('#zip').val();
+        
+        saveQueryEvent(breed, zip);
+
+        let hasValidBreed = validateBreed();
+        let hasValidZip = validateZipCode();
+        let err = '';
+
+        if(!hasValidBreed) {
+            err = 'Sorry, something went wrong. Please try your search again.';
+            saveErrorEvent(err);
+        }
+        if(!hasValidZip) {
+            err = 'Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.';
+            saveErrorEvent(err);
+        }
     });
 }
 
