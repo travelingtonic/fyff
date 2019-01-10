@@ -17,6 +17,14 @@ function processForm() {
     breed: ${store.breedQuery}
     zip: ${store.zipQuery}
     valid zip code?: ${validateZipCode()}`);
+
+    if(validateZipCode()) {
+        store.hasQueryError = false;
+    }
+    else {
+        store.hasQueryError = true;
+    }
+    console.log(`Query Error?: ${store.hasQueryError}`);
 }
 
 function validateZipCode() {
