@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Find Your Furry Friend (F3) lets you search by breed for dog adoptions available near you">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:600i|Roboto" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" media="screen" href="grid.css" />
     <link rel="stylesheet" type="text/css" media="screen" href="index.css" />
     <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
 </head>
@@ -19,22 +20,22 @@
         <h1>Find Your Furry Friend</h1>
     </header>
     <main role="main">
-        <section role="region">
+        <section role="region" class="row">
             <p>Find available adoptions in your area for a dog breed that may be a good fit for you and your family.</p>
         </section>
-        <section role="region">
+        <section role="region" class="row">
             <form id="searchform">
-                <label>Search for: <span class="js-query">//TODO: Drop down list</span>
+                <label class="col-4">Search for: <span class="js-query">//TODO: Drop down list</span>
                 </label>
-                <label>near 
+                <label class="col-4">near 
                     <input id="zip" placeholder="5 digit zip code" type="text" required>
                 </label>
-                <div>
+                <div class="col-4">
                     <button id="submit" type="submit">Search</button>
                 </div>
             </form>
         </section>
-        <section class="js-response"></section>
+        <section class="js-response row"></section>
     </main>
     <script src="index.js"></script>
 </body>

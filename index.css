@@ -3,6 +3,26 @@
     box-sizing: border-box;
 }
 
+figcaption {
+    font-family: 'Open Sans', sans-serif;
+    text-align: center;
+}
+
+figure {
+    float: left;
+    margin: 0;
+    padding-right: 15px;
+}
+
+h1 {
+    line-height: 200%;
+}
+
+header {
+    border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+    padding-bottom: 20px;
+}
+
 .logo {
     height: 70px;
 }
