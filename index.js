@@ -14,8 +14,14 @@ Application Tasks
 function processForm() {
     console.log(`processForm ran
     breed: ${store.breedQuery}
-    zip: ${store.zipQuery}`);
+    zip: ${store.zipQuery}
+    valid zip code?: ${validateZipCode()}`);
+}
 
+function validateZipCode() {
+    const zipExpression = /^[0-9]{5}(?:-[0-9]{4})?$/;
+
+    return (zipExpression.test(store.zipQuery) ? true : false);
 }
 
 
