@@ -2,14 +2,21 @@
 Data Stores
 ******************** */
 const store = {
-    isSearchStart: true
+    isSearchStart: true,
+    breedQuery: null,
+    zipQuery: null
 };
 
 
 /* ********************
 Application Tasks
 ******************** */
+function processForm() {
+    console.log(`processForm ran
+    breed: ${store.breedQuery}
+    zip: ${store.zipQuery}`);
 
+}
 
 
 /* ********************
@@ -51,6 +58,10 @@ function handleFormSubmit() {
     $('form').submit(event => {
         event.preventDefault();
         console.log(`handleFormSubmit ran`);
+        store.breedQuery = $('#query').val();
+        store.zipQuery = $('#zip').val();
+        store.isSearchStart = false;
+        processForm();
     });
 }
 
