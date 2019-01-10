@@ -47,7 +47,12 @@ function render() {
 /* ********************
 Handlers
 ******************** */
-
+function handleFormSubmit() {
+    $('form').submit(event => {
+        event.preventDefault();
+        console.log(`handleFormSubmit ran`);
+    });
+}
 
 
 /* ********************
@@ -55,4 +60,5 @@ On Page Load
 ******************** */
 $(function() {
     render();
+    handleFormSubmit();
 });
