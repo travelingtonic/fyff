@@ -30,12 +30,27 @@ function getAdoptions() {
             format: "json",
             output: "basic",
             count: "10",
-            breed: store.breedQuery,
+            breed: query,
             location: store.zipQuery
         };
         const queryString = formatQueryParams(params);
         const url = 'https://api.petfinder.com/pet.find?' + queryString + '&callback=?';
         console.log(url);
+        $.getJSON(url).then(function checkAdoptionResults(responseJson) {
+            if(hasAdoptionResults(responseJson)) {
+                console.log(`We have adoption records`);
+                
+            }
+            else {
+                console.log(`We do not have adoption results`);
+                
+            }
+        })
+}
+
+function hasAdoptionResults(responseJson) {
+    console.log(`checking for adoption results`);
+    return (responseJson.petfinder.pets.pet !== undefined ? true : false);
 }
 
 function saveErrorEvent(err) {
