@@ -3,6 +3,7 @@ Data Stores
 ******************** */
 const store = {
     isSearchStart: true,
+    hasQueryError: false,
     breedQuery: null,
     zipQuery: null
 };
