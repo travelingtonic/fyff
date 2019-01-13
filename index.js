@@ -151,7 +151,7 @@ function getYouTubeVideos() {
       .then(responseJson => saveVideoId(responseJson))
       .then(startVideo())
       .catch(err => {
-        $('#js-error-message').text(`Something went wrong: ${err.message}`);
+        $('.js-error-message').text(`Something went wrong: ${err.message}`);
       });
   }
 
@@ -200,10 +200,11 @@ function saveAdoptions(responseJson) {
     }))
     console.log(adoptList);
 
-    store.hasResults = true;
     store.adoptions = adoptList;
+    store.isLoading = false;
+    store.hasResults = true; //TODO to move this to the breed detail save
 
-    //render();
+    render();
 }
 
 function saveBackToResultsEvent() {
@@ -297,8 +298,11 @@ function saveQuery(breed, zip) {
 
 function saveSearchEvent() {
     store.isSearchStart = false;
+    store.isLoading = true;
     store.hasError = false;
     store.hasResults = false;
+
+    render();
 }
 
 function saveVideoId(responseJson) {
@@ -371,9 +375,17 @@ function generateBreedDropDown() {
 }
 
 function generateErrorHtml() {
-    let err = store.error.join(`</p><p class="error">`);
-    let html = `<section role="region" class="js-errors row">
-    <p class="error">${err}</p>
+    let err = store.error.join(`</p><p class="js-error-message">`);
+    let html = `<section role="region" class="js-message row">
+    <p class="js-error-message">${err}</p>
+    </section>`;
+
+    return html;
+}
+
+function generateLoadingHtml() {
+    let html = `<section role="region" class="js-message row">
+    <p class="js-loading-message">Fetching...</p>
     </section>`;
 
     return html;
@@ -466,6 +478,7 @@ function render() {
 }*/
     console.log(`Application state:
     isSearchStart = ${store.isSearchStart}
+    isLoading = ${store.isLoading}
     hasError = ${store.hasError}
     hasResults = ${store.hasResults}
     isPetPage = ${store.isPetPage}`);
@@ -479,7 +492,8 @@ function render() {
     }
     else if(store.isLoading) {
         //TODO will show when we're still loading. Will need to make sure you clear out any adoptions, etc html
-        renderMessages();
+        //renderMessages();
+        $('.js-response').html(generateLoadingHtml());
     }
     else if(store.isPetPage) {
         console.log('isPetPage, render');
