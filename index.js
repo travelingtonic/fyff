@@ -33,13 +33,13 @@ Application Tasks
 function createPlayer() {
     player = new YT.Player('breed-video', {
         height: '200',
-        width: '320',
+        width: '250',
         videoId: store.videoId,
         events: {
-          'onReady': onPlayerReady
+            'onReady': onPlayerReady
         }
-      });
-      console.log('player created');
+    });
+    console.log('player created');
 }
 
 function formatQueryParams(params) {
@@ -130,51 +130,28 @@ function getYouTubeVideos() {
     console.log(`getYouTubeVideos ran`);
     const videoQuery = 'dogs 101 facts ' + BREEDS[store.breedQuery].adoptionBreed;
     const params = {
-      key: videoApiKey,
-      q: videoQuery,
-      type: 'video',
-      videoEmbeddable: 'true',
-      part: 'snippet',
-      maxResults: 1
+        key: videoApiKey,
+        q: videoQuery,
+        type: 'video',
+        videoEmbeddable: 'true',
+        part: 'snippet',
+        maxResults: 1
     };
     const queryString = formatQueryParams(params)
     const url = 'https://www.googleapis.com/youtube/v3/search' + '?' + queryString;
-
+  
     console.log(url);
-    return fetch(url)
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw new Error(response.statusText);
-      })
-      .then(responseJson => saveVideoId(responseJson))
-      .then(startVideo())
-      .catch(err => {
-        $('.js-error-message').text(`Something went wrong: ${err.message}`);
-      });
-  }
-
-function onPlayerReady(event) {
-    console.log(`onPlayerReady ran`);
-    event.target.playVideo();
-}
-
-function onYouTubeIframeAPIReady() {
-    console.log(`onYouTubeIframeAPIReady ran`);
-    if(store.hasError) {
-        console.log(`iframe but has search error`);
-        player;
-    }
-    else if(!store.hasResults) {
-        console.log(`iframe but has no api results`);
-        //player;
-        createPlayer();
-    }
-    else {
-        console.log('iframe and no errors, creating player');
-        createPlayer();
-    }
+    fetch(url)
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error(response.statusText);
+        })
+        .then(responseJson => saveVideoId(responseJson))
+        .catch(err => {
+            $('#js-message').text(`Something went wrong: ${err.message}`);
+        });
 }
 
 function parsePetThumbnailImage(responseJson) {
@@ -316,25 +293,25 @@ function saveSearchEvent() {
 function saveVideoId(responseJson) {
     store.videoId = responseJson.items[0].id.videoId;
     console.log(`saved video: ${store.videoId}`);
+
+    render();
 }
 
 function startVideo() {
     console.log(`startVideo ran`);
-    //player = undefined;
-    //videoId = parseVideoId();
     if (player !== undefined) {
         var x = new String(store.videoId);
-    player.loadVideoById(x);
-    console.log(store.videoId);
+        player.loadVideoById(x);
+        console.log('Player defined');
     }
     else {
-    var tag = document.createElement('script');
-    console.log('Player undefined');
+        var tag = document.createElement('script');
+        console.log('Player undefined');
 
-tag.src = "https://www.youtube.com/iframe_api";
-var firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-createPlayer();
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        createPlayer();
     }
 }
 
@@ -357,16 +334,14 @@ function validateZipCode() {
 HTML Generation
 ******************** */
 function generateBreedDetails() {
-    let html = `<section role="region" class="js-breed-info col-6">
-    <h2 class="js-breed-name">About the ${store.breedDetails.name}</h2>
+    let html = `
     <ul class="js-breed-details">
         <li><span class="breed-detail">Personality:</span> ${store.breedDetails.temperament}</li>
         <li><span class="breed-detail">Originally Bred For:</span> ${store.breedDetails.breeding}</li>
         <li><span class="breed-detail">Height:</span> ${store.breedDetails.height} inches</li>
         <li><span class="breed-detail">Weight:</span> ${store.breedDetails.weight} inches</li>
         <li><span class="breed-detail">Life Span:</span> ${store.breedDetails.life}</li>
-    </ul>
-    </section>`;
+    </ul>`;
 
     return html;
 }
@@ -382,9 +357,13 @@ function generateBreedDropDown() {
     return dropDownHtml;
 }
 
+function generateBreedName() {
+    return (`<h2 class="js-breed-name">About the ${store.breedDetails.name}</h2>`);
+}
+
 function generateErrorHtml() {
     let err = store.error.join(`</p><p class="js-error-message">`);
-    let html = `<section role="region" class="js-message row">
+    let html = `<section role="region" class="js-error row">
     <p class="js-error-message">${err}</p>
     </section>`;
 
@@ -392,7 +371,7 @@ function generateErrorHtml() {
 }
 
 function generateLoadingHtml() {
-    let html = `<section role="region" class="js-message row">
+    let html = `<section role="region" class="js-loading row">
     <p class="js-loading-message">Fetching...</p>
     </section>`;
 
@@ -449,15 +428,16 @@ function generatePetDetailOptionsHtml() {
 
     return html;
 }
-
+/*
 function generateResponseHtml() {
     let breedHtml = generateBreedDetails();
     let adoptionHtml = generateResultHtml();
     return (breedHtml + adoptionHtml);
 }
+*/
 
 function generateResultHtml() {
-    let html = `<section role="region" class="js-adoption-results col-6">
+    let html = `
     <h2>Available Adoptions Near You</h2>`;
 
     for(let x = 0; x < store.adoptions.length; x ++) {
@@ -468,7 +448,6 @@ function generateResultHtml() {
         </figure>
     </div>`;
     }
-    html += `</section>`;
 
     return html;
 }
@@ -496,21 +475,26 @@ function render() {
     }
     else if(store.hasError) {
         console.log(`hasError, render`);
-        $('.js-response').html(generateErrorHtml());
+        $('.js-message').html(generateErrorHtml());
     }
     else if(store.isLoading) {
         //TODO will show when we're still loading. Will need to make sure you clear out any adoptions, etc html
         //renderMessages();
-        $('.js-response').html(generateLoadingHtml());
+        $('.js-message').html(generateLoadingHtml());
     }
     else if(store.isPetPage) {
         console.log('isPetPage, render');
-        $('.js-response').html(generatePetDetailHtml());
+        $('.js-message').html(generatePetDetailHtml());
     }
     else if(store.hasResults) {
         console.log(`hasResults, render`);
         //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
-        $('.js-response').html(generateResponseHtml());
+        renderBreedName();
+        renderBreedDetails();
+        renderBreedVideo();
+        renderAdoptions();
+
+        //$('.js-response').html(generateResponseHtml());
     }
     else {
         console.log(`nothing to render, no change`);
@@ -518,7 +502,22 @@ function render() {
     }
 }
 
+function renderAdoptions() {
+    $('.js-adoption-results').html(generateResultHtml());
+}
 
+function renderBreedDetails() {
+    $('.js-breed-details').html(generateBreedDetails());
+}
+
+function renderBreedName() {
+    $('.js-breed-name').html(generateBreedName());
+}
+
+function renderBreedVideo() {
+    $('.js-breed-video').html(`Loading...`);
+    startVideo();
+}
 
 
 /* ********************
@@ -551,14 +550,8 @@ function handleFormSubmit() {
             saveErrorEvent('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.');
         }
         else {
-            Promise.all([getAdoptions(), getBreedDetails()]).then(() => saveResultEvent());
-
-
-            /*getAdoptions()
-            getBreedDetails();
-            ;
-            //getYouTubeVideos();
-            saveResultEvent();*/
+            Promise.all([getAdoptions(), getBreedDetails(),getYouTubeVideos()]).then(() => saveResultEvent());
+            //Promise.all([getAdoptions(), getBreedDetails()]).then(() => saveResultEvent());
         }
     });
 }
@@ -573,6 +566,34 @@ function handlePetClick() {
 
         getPetDetails();
       });
+}
+
+function onPlayerReady(event) {
+    console.log(`onPlayerReady ran`);
+    event.target.playVideo();
+}
+
+function onPlayerStart(event) {
+    if(YT.PlayerState.CUED) {
+        console.log(`onPlayerStart ran`);
+        event.target.pauseVideo();
+    }
+}
+
+function onYouTubeIframeAPIReady() {
+    console.log(`onYouTubeIframeAPIReady ran`);
+    if(store.hasError) {
+        console.log(`iframe but has search error`);
+        player;
+    }
+    else if(!store.hasResults) {
+        console.log(`iframe but has no api results`);
+        player;
+    }
+    else {
+        console.log('iframe and no errors, creating player');
+        createPlayer();
+    }
 }
 
 
