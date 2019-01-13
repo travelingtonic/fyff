@@ -1,4 +1,8 @@
 /* ********************
+TODO Speak to your technical decisions and tradeoffs
+******************** */
+
+/* ********************
 Data Stores
 ******************** */
 const dogApiKey = 'a0d7f14e-9917-471c-8876-3122563409e5';
@@ -7,15 +11,18 @@ const videoApiKey = 'AIzaSyAPSmkC5hByWgmMFM6kZwCi_PScnMx68zk';
 let player;
 
 const store = {
-    isSearchStart: true,
+    isSearchStart: true, //true
     hasError: false,
     hasResults: false,
+    isPetPage: false, //false
     breedQuery: null,
     zipQuery: null,
     error: [],
     adoptions: [],
     breedDetails: {},
-    videoId: null
+    videoId: null,
+    petId: null, //43657126
+    petDetails: []
 };
 
 
@@ -55,7 +62,8 @@ function getAdoptions() {
         const queryString = formatQueryParams(params);
         const url = 'https://api.petfinder.com/pet.find?' + queryString + '&callback=?';
         console.log(url);
-        $.getJSON(url).then(function checkAdoptionResults(responseJson) {
+        //Note: We're using getJSON per PetFinder's api docs re:cross-domain https://www.petfinder.com/developers/api-docs#methods
+        return $.getJSON(url).then(function checkAdoptionResults(responseJson) {
             console.log(`checking for adoption results`);
             let err = '';
             if(responseJson.petfinder.hasOwnProperty('pets')) {
@@ -101,6 +109,20 @@ function getBreedDetails() {
 
         throw(error);
     });
+}
+
+function getPetDetails() {
+    console.log(`getPetDetails ran`);
+        const params = {
+            key: petFinderApiKey,
+            format: "json",
+            id: store.petId
+        };
+        const queryString = formatQueryParams(params);
+        const url = 'https://api.petfinder.com/pet.get?' + queryString + '&callback=?';
+        console.log(`Pet Id: ${store.petId}`);
+        //Note: We're using getJSON per PetFinder's api docs re:cross-domain https://www.petfinder.com/developers/api-docs#methods
+        return $.getJSON(url).then((responseJson) => savePetDetails(responseJson))
 }
 
 function getYouTubeVideos() {
@@ -154,30 +176,27 @@ function onYouTubeIframeAPIReady() {
     }
 }
 
+function parsePetThumbnailImage(responseJson) {
+    const thumbDetail = responseJson.petfinder.pets.pet.media.photos.photo.find(photo => photo["@size"] === 'fpm');
+    const thumbObj = thumbDetail.$t;
+
+    return thumbObj;
+}
+
+function parsePetMainImage(responseJson) {
+    const imgDetail = responseJson.petfinder.pet.media.photos.photo.find(photo => photo["@size"] === 'pn');
+    const imgUrl = imgDetail.$t;
+
+    return imgUrl;
+}
+
 function saveAdoptions(responseJson) {
-    const adoptList = [];
-    let pet = {};
-    let gender = '';
-
-    for(let x = 0; x < responseJson.petfinder.pets.pet.length; x ++) {
-        if(responseJson.petfinder.pets.pet[x].sex.$t === "F") {
-            gender = 'Female';
-        }
-        else if(responseJson.petfinder.pets.pet[x].sex.$t === "M") {
-            gender = 'Male';
-        }
-        else {
-            gender = '';
-        }
-
-        pet = {
-            name: responseJson.petfinder.pets.pet[x].name.$t,
-            img: responseJson.petfinder.pets.pet[x].media.photos.photo[1].$t,
-            gender,
-            id: responseJson.petfinder.pets.pet[x].id.$t
-        }
-        adoptList.push(pet);
-    }
+    const adoptList = responseJson.petfinder.pets.pet.map(x => ({
+        name: x.name.$t,
+        img: x.media.photos.photo[1].$t,
+        gender: translateGender(x.sex.$t),
+        id: x.id.$t
+    }))
     console.log(adoptList);
 
     store.hasResults = true;
@@ -204,6 +223,57 @@ function saveBreedDetails(responseJson) {
 function saveErrorEvent(err) {
     store.hasError = true;
     store.error.push(err);
+
+    render();
+}
+
+function savePetId(id) {
+    store.petId = id;
+
+    //render();
+}
+
+function savePetDetails(responseJson) {
+    let petBreeds = [];
+    if(Array.isArray(responseJson.petfinder.pet.breeds.breed)) {
+        responseJson.petfinder.pet.breeds.breed.forEach(
+            function(arrayItem) {
+                petBreeds.push(arrayItem.$t)
+            });
+    }
+    else {
+        petBreeds.push(responseJson.petfinder.pet.breeds.breed.$t);
+    }
+    
+    
+    let petOptions = [];
+    if(Array.isArray(responseJson.petfinder.pet.options.option)) {
+        responseJson.petfinder.pet.options.option.forEach(
+            function(arrayItem) {
+                petOptions.push(arrayItem.$t)
+            }
+        );
+    }
+    else {
+        petOptions.push(responseJson.petfinder.pet.options.option.$t);
+    }
+    
+    
+    let petDetails = {
+        name: responseJson.petfinder.pet.name.$t,
+        image: parsePetMainImage(responseJson),
+        breed: petBreeds,
+        description: responseJson.petfinder.pet.description.$t,
+        age: responseJson.petfinder.pet.age.$t,
+        gender: translateGender(responseJson.petfinder.pet.sex.$t),
+        options: petOptions,
+        contactEmail: responseJson.petfinder.pet.contact.email.$t,
+        contactPhone: responseJson.petfinder.pet.contact.phone.$t
+    };
+
+    console.log(petDetails.gender);
+    store.petDetails = petDetails;
+    store.isPetPage = true;
 
     render();
 }
@@ -248,6 +318,10 @@ createPlayer();
     }
 }
 
+function translateGender(sex) {
+    return (sex === 'F' ? 'Female' : sex === 'M' ? 'Male' : '');
+}
+
 function validateBreed() {
     return (store.breedQuery >= 0 && store.breedQuery < BREEDS.length ? true : false);
 }
@@ -263,15 +337,16 @@ function validateZipCode() {
 HTML Generation
 ******************** */
 function generateBreedDetails() {
-    let html = `<h2 class="js-breed-name">${store.breedDetails.name}</h2>
-    <div id="breed-video" class="js-breed-image random-breed-image"></div>
+    let html = `<section role="region" class="js-breed-info col-6">
+    <h2 class="js-breed-name">About the ${store.breedDetails.name}</h2>
     <ul class="js-breed-details">
         <li><span class="breed-detail">Personality:</span> ${store.breedDetails.temperament}</li>
         <li><span class="breed-detail">Originally Bred For:</span> ${store.breedDetails.breeding}</li>
-        <li><span class="breed-detail">Height:</span> ${store.breedDetails.height}</li>
-        <li><span class="breed-detail">Weight:</span> ${store.breedDetails.weight}</li>
+        <li><span class="breed-detail">Height:</span> ${store.breedDetails.height} inches</li>
+        <li><span class="breed-detail">Weight:</span> ${store.breedDetails.weight} inches</li>
         <li><span class="breed-detail">Life Span:</span> ${store.breedDetails.life}</li>
-    </ul>`;
+    </ul>
+    </section>`;
 
     return html;
 }
@@ -289,23 +364,83 @@ function generateBreedDropDown() {
 
 function generateErrorHtml() {
     let err = store.error.join(`</p><p class="error">`);
-    let html = `<p class="error">${err}</p>`;
+    let html = `<section role="region" class="js-errors row">
+    <p class="error">${err}</p>
+    </section>`;
 
     return html;
 }
 
+function generatePetDetailHtml() {
+    let breeds;
+
+    if(store.petDetails.breed.length > 1) {
+        breeds = store.petDetails.breed.join(', ');
+    }
+    else {
+        breeds = store.petDetails.breed[0];
+    }
+    const html = `
+        <div>
+            <img src="${store.petDetails.image}" alt="Image of ${store.petDetails.name}">
+            <div>
+                <h2>Meet ${store.petDetails.name}</h2>
+                <ul>
+                    <li>${breeds}</li>
+                    <li>${store.petDetails.age}</li>
+                    <li>${store.petDetails.gender}</li>
+                    ${generatePetDetailOptionsHtml()}
+                </ul>
+            </div>
+            <p>${store.petDetails.description}</p>
+            <h2>Contact Information</h2>
+            <ul>
+                <li>Phone Number: ${store.petDetails.contactPhone !== undefined ? store.petDetails.contactPhone : 'Not Provided'}</li>
+                <li>Email Address: ${store.petDetails.contactEmail !== undefined ? store.petDetails.contactEmail : 'Not Provided'}</li>
+            </ul>
+        </div>
+    `;
+
+return html;
+}
+
+function generatePetDetailOptionsHtml() {
+    let homeDetails = store.petDetails.options;
+    let html = '';
+    
+    homeDetails.forEach(function(value, index) {
+        if (value === 'housetrained') store.petDetails.options[index] = '<li>House-trained: Yes</li>';
+        if (value === 'altered') store.petDetails.options[index] = '<li>Spayed/Neutered: Yes</li>';
+        if (value === 'hasShots') store.petDetails.options[index] = '<li>Health: Vaccinations up to date</li>';
+        if (value === 'noKids') store.petDetails.options[index] = '<li>Good in home with older kids or no kids</li>';
+        if (value === 'noDogs') store.petDetails.options[index] = '<li>Good in home with no other dogs</li>';
+        if (value === 'noCats') store.petDetails.options[index] = '<li>Good in home with no cats</li>';
+    });
+    html = homeDetails.join('\n\t');
+
+    return html;
+}
+
+function generateResponseHtml() {
+    let breedHtml = generateBreedDetails();
+    let adoptionHtml = generateResultHtml();
+    return (breedHtml + adoptionHtml);
+}
+
 function generateResultHtml() {
-    let html = `<h2>Available Adoptions Near You</h2>`;
+    let html = `<section role="region" class="js-adoption-results col-6">
+    <h2>Available Adoptions Near You</h2>`;
 
     for(let x = 0; x < store.adoptions.length; x ++) {
         html += `<div>
         <figure>
             <figcaption>${store.adoptions[x].name} - ${store.adoptions[x].gender}</figcaption>
-            <input type="image" value="${store.adoptions[x].id}" name="pet" alt="image of ${store.adoptions[x].name}" src="${store.adoptions[x].img}">
+            <input type="image" value="${store.adoptions[x].id}" class="js-pet-link" name="pet" alt="image of ${store.adoptions[x].name}" src="${store.adoptions[x].img}">
         </figure>
     </div>`;
     }
-    
+    html += `</section>`;
+
     return html;
 }
 
@@ -314,28 +449,45 @@ function generateResultHtml() {
 HTML Render
 ******************** */
 function render() { 
+    /*render() {
+  renderMessages();
+  renderBreedDetails();
+  renderBreedVideo();
+  renderAdoptions(); 
+}*/
     console.log(`Application state:
     isSearchStart = ${store.isSearchStart}
     hasError = ${store.hasError}
-    hasResults = ${store.hasResults}`);
+    hasResults = ${store.hasResults}
+    isPetPage = ${store.isPetPage}`);
     if (store.isSearchStart) {
         console.log(`isSearch start, render`);
         $('.js-query').html(generateBreedDropDown());
     }
     else if(store.hasError) {
         console.log(`hasError, render`);
-        $('.js-errors').html(generateErrorHtml());
+        $('.js-response').html(generateErrorHtml());
+    }
+    else if(store.isLoading) {
+        //TODO will show when we're still loading. Will need to make sure you clear out any adoptions, etc html
+        renderMessages();
+    }
+    else if(store.isPetPage) {
+        console.log('isPetPage, render');
+        $('.js-response').html(generatePetDetailHtml());
     }
     else if(store.hasResults) {
         console.log(`hasResults, render`);
-        $('.js-adoption-results').html(generateResultHtml());
-        $('.js-breed-info').html(generateBreedDetails());
+        //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
+        $('.js-response').html(generateResponseHtml());
     }
     else {
         console.log(`nothing to render, no change`);
         
     }
 }
+
+
 
 
 /* ********************
@@ -348,29 +500,36 @@ function handleFormSubmit() {
 
         saveSearchEvent();
 
-        let breed = $('#query').val();
-        let zip = $('#zip').val();
-        
+        const breed = $('#query').val();
+        const zip = $('#zip').val();
+        //TODO Perhaps saveSearchEvent and saveQuery can be combined
         saveQuery(breed, zip);
 
-        let hasValidBreed = validateBreed();
-        let hasValidZip = validateZipCode();
-        let err = '';
-
-        if(!hasValidBreed) {
-            err = 'Sorry, something went wrong. Please try your search again.';
-            saveErrorEvent(err);
+        if(!validateBreed()) {
+            saveErrorEvent('Sorry, something went wrong. Please try your search again.');
         }
-        if(!hasValidZip) {
-            err = 'Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.';
-            saveErrorEvent(err);
+        else if(!validateZipCode()) {
+            saveErrorEvent('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.');
         }
-        if(hasValidBreed && hasValidZip) {
-            getAdoptions();
+        else {
+            getAdoptions()
             getBreedDetails();
+            ;
             //getYouTubeVideos();
         }
     });
+}
+
+function handlePetClick() {
+    $('.js-response').on('click', '.js-pet-link', function(event) {
+        console.log(`handlePetClick ran`);
+        
+        const pet = $(this).val();
+
+        savePetId(pet);
+
+        getPetDetails();
+      });
 }
 
 
@@ -380,4 +539,5 @@ On Page Load
 $(function() {
     render();
     handleFormSubmit();
+    handlePetClick();
 });
