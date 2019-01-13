@@ -12,6 +12,7 @@ let player;
 
 const store = {
     isSearchStart: true, //true
+    isLoading: false,
     hasError: false,
     hasResults: false,
     isPetPage: false, //false
@@ -557,5 +558,5 @@ $(function() {
     handlePetClick();
     handleBackClick();
 
-    render();
+    render(); //TODO: Create a default state for render (requires defaulting all set stores) so that we don't need the isSearchStart state.
 });
