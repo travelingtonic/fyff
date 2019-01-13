@@ -201,8 +201,9 @@ function saveAdoptions(responseJson) {
     console.log(adoptList);
 
     store.adoptions = adoptList;
-    store.isLoading = false;
-    store.hasResults = true; //TODO to move this to the breed detail save
+    
+    //store.isLoading = false;
+    //store.hasResults = true; //TODO to move this to the breed detail save
 
     render();
 }
@@ -294,6 +295,13 @@ function saveQuery(breed, zip) {
     console.log(`saveQuery ran,
     breed: ${store.breedQuery}
     zip: ${store.zipQuery}`);
+}
+
+function saveResultEvent() {
+    store.isLoading = false;
+    store.hasResults = true;
+
+    render();
 }
 
 function saveSearchEvent() {
@@ -543,10 +551,14 @@ function handleFormSubmit() {
             saveErrorEvent('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.');
         }
         else {
-            getAdoptions()
+            Promise.all([getAdoptions(), getBreedDetails()]).then(() => saveResultEvent());
+
+
+            /*getAdoptions()
             getBreedDetails();
             ;
             //getYouTubeVideos();
+            saveResultEvent();*/
         }
     });
 }
