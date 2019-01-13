@@ -382,6 +382,7 @@ function generatePetDetailHtml() {
     }
     const html = `
         <div>
+            <button class="link"><< Back to Results</button>
             <img src="${store.petDetails.image}" alt="Image of ${store.petDetails.name}">
             <div>
                 <h2>Meet ${store.petDetails.name}</h2>
