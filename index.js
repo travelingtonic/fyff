@@ -205,6 +205,13 @@ function saveAdoptions(responseJson) {
     //render();
 }
 
+function saveBackToResultsEvent() {
+    store.petId = null;
+    store.isPetPage = false;
+
+    render();
+}
+
 function saveBreedDetails(responseJson) {
     let breed = {
         name: responseJson.name,
@@ -382,6 +389,7 @@ function generatePetDetailHtml() {
     }
     const html = `
         <div>
+            <button class="js-back-link"><< Back to Results</button>
             <img src="${store.petDetails.image}" alt="Image of ${store.petDetails.name}">
             <div>
                 <h2>Meet ${store.petDetails.name}</h2>
@@ -493,6 +501,14 @@ function render() {
 /* ********************
 Handlers
 ******************** */
+function handleBackClick() {
+    $('.js-response').on('click', '.js-back-link', function(event) {
+        console.log(`handleBackClick ran`);
+
+        saveBackToResultsEvent();
+    });
+}
+
 function handleFormSubmit() {
     $('form').submit(event => {
         event.preventDefault();
@@ -537,7 +553,9 @@ function handlePetClick() {
 On Page Load
 ******************** */
 $(function() {
-    render();
     handleFormSubmit();
     handlePetClick();
+    handleBackClick();
+
+    render();
 });
