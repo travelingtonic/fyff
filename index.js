@@ -640,13 +640,6 @@ function onPlayerReady(event) {
     event.target.playVideo();
 }
 
-function onPlayerStart(event) {
-    if(YT.PlayerState.CUED) {
-        console.log(`onPlayerStart ran`);
-        event.target.pauseVideo();
-    }
-}
-
 function onYouTubeIframeAPIReady() {
     console.log(`onYouTubeIframeAPIReady ran`);
     if(store.hasError) {
