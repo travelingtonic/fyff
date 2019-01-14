@@ -42,6 +42,17 @@ function createPlayer() {
     console.log('player created');
 }
 
+function destroyYouTubeVideo() {
+    if(player !== undefined) {
+        player.stopVideo();
+        $('.js-breed-video').addClass('hidden');
+        //player.destroy();
+    }
+    else {
+        $('.js-breed-video').html('');
+    }
+}
+
 function formatQueryParams(params) {
     const queryItems = Object.keys(params)
       .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
@@ -141,7 +152,7 @@ function getYouTubeVideos() {
     const url = 'https://www.googleapis.com/youtube/v3/search' + '?' + queryString;
   
     console.log(url);
-    fetch(url)
+    return fetch(url)
         .then(response => {
             if (response.ok) {
                 return response.json();
@@ -208,6 +219,7 @@ function saveBreedDetails(responseJson) {
 }
 
 function saveErrorEvent(err) {
+    store.isLoading = false;
     store.hasError = true;
     store.error.push(err);
 
@@ -339,7 +351,7 @@ function generateBreedDetails() {
         <li><span class="breed-detail">Personality:</span> ${store.breedDetails.temperament}</li>
         <li><span class="breed-detail">Originally Bred For:</span> ${store.breedDetails.breeding}</li>
         <li><span class="breed-detail">Height:</span> ${store.breedDetails.height} inches</li>
-        <li><span class="breed-detail">Weight:</span> ${store.breedDetails.weight} inches</li>
+        <li><span class="breed-detail">Weight:</span> ${store.breedDetails.weight} inches</li> <!--TODO fix UOM -->
         <li><span class="breed-detail">Life Span:</span> ${store.breedDetails.life}</li>
     </ul>`;
 
@@ -471,10 +483,31 @@ function render() {
     isPetPage = ${store.isPetPage}`);
     if (store.isSearchStart) {
         console.log(`isSearch start, render`);
+        $('.js-message').html('');
+        $('.js-breed-name').html('');
+        //$('.js-breed-video').html('');
+        $('.js-breed-details').html('');
+
         $('.js-query').html(generateBreedDropDown());
     }
-    else if(store.hasError) {
+    else if(store.hasResults) {
+        console.log(`hasResults, render`);
+        $('.js-message').html('');
+        //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
+        renderBreedName();
+        renderBreedDetails();
+        renderBreedVideo();
+        renderAdoptions();
+
+        //$('.js-response').html(generateResponseHtml());
+    }
+    else {
+        renderMessages();
+    }
+    /*else if(store.hasError) {
         console.log(`hasError, render`);
+        $('.js-breed-name').html('');
+        $('.js-breed-details').html('');
         $('.js-message').html(generateErrorHtml());
     }
     else if(store.isLoading) {
@@ -499,7 +532,7 @@ function render() {
     else {
         console.log(`nothing to render, no change`);
         
-    }
+    }*/
 }
 
 function renderAdoptions() {
@@ -515,8 +548,33 @@ function renderBreedName() {
 }
 
 function renderBreedVideo() {
-    $('.js-breed-video').html(`Loading...`);
-    startVideo();
+    if($('.js-breed-video').hasClass('hidden')) {
+        $('.js-breed-video').removeClass('hidden');
+        startVideo();
+    }
+    else {
+        $('.js-breed-video').html(`Loading...`);
+        startVideo();
+    }
+}
+
+function renderMessages() {
+    destroyYouTubeVideo();
+    $('.js-breed-name').html('');
+    $('.js-breed-details').html('');
+    $('.js-adoption-results').html('');
+
+    if(store.hasError) {
+        console.log(`hasError, render`);
+        $('.js-message').html(generateErrorHtml());
+    }
+    else if(store.isPetPage) {
+        console.log('isPetPage, render');
+        $('.js-message').html(generatePetDetailHtml());
+    }
+    else {
+        $('.js-message').html(generateLoadingHtml());
+    }
 }
 
 
@@ -544,14 +602,21 @@ function handleFormSubmit() {
         saveQuery(breed, zip);
 
         if(!validateBreed()) {
+            console.log(`search breed invalid`);
             saveErrorEvent('Sorry, something went wrong. Please try your search again.');
         }
-        else if(!validateZipCode()) {
-            saveErrorEvent('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.');
-        }
         else {
-            Promise.all([getAdoptions(), getBreedDetails(),getYouTubeVideos()]).then(() => saveResultEvent());
-            //Promise.all([getAdoptions(), getBreedDetails()]).then(() => saveResultEvent());
+            if(!validateZipCode()) {
+                console.log(`search zip invalid`);
+                saveErrorEvent('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.');
+            }
+            else {
+                console.log(`Everything's good with the search`);
+                Promise.all([getAdoptions(), getBreedDetails(),getYouTubeVideos()])
+                    .then()
+                    .then(() => saveResultEvent());
+                //Promise.all([getAdoptions(), getBreedDetails()]).then(() => saveResultEvent());
+            }
         }
     });
 }
