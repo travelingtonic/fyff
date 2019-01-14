@@ -14,8 +14,8 @@ const store = {
     isSearchStart: true, //true
     isLoading: false,
     hasError: false,
-    hasResults: false,
-    isPetPage: false, //false
+    isOnResultView: false,
+    isOnPetView: false, //false
     breedQuery: null,
     zipQuery: null,
     error: [],
@@ -191,14 +191,15 @@ function saveAdoptions(responseJson) {
     store.adoptions = adoptList;
     
     //store.isLoading = false;
-    //store.hasResults = true; //TODO to move this to the breed detail save
+    //store.isOnResultView = true; //TODO to move this to the breed detail save
 
     render();
 }
 
 function saveBackToResultsEvent() {
     store.petId = null;
-    store.isPetPage = false;
+    store.isOnPetView = false;
+    store.isOnResultView = true;
 
     render();
 }
@@ -272,32 +273,35 @@ function savePetDetails(responseJson) {
 
     console.log(petDetails.gender);
     store.petDetails = petDetails;
-    store.isPetPage = true;
+
+    store.isOnResultView = false;
+    store.isOnPetView = true;
 
     render();
-}
-
-function saveQuery(breed, zip) {
-    store.breedQuery = breed;
-    store.zipQuery = zip;
-
-    console.log(`saveQuery ran,
-    breed: ${store.breedQuery}
-    zip: ${store.zipQuery}`);
 }
 
 function saveResultEvent() {
     store.isLoading = false;
-    store.hasResults = true;
+    store.isOnResultView = true;
 
     render();
 }
 
-function saveSearchEvent() {
+function saveSearchEvent(breed, zip) {
+    store.error = [];
+    store.adoptions = [];
+    store.breedDetails = {};
+    store.petDetails = [];
+    store.petId = null;
+    store.videoId = null;
+
+    store.breedQuery = breed;
+    store.zipQuery = zip;
+
     store.isSearchStart = false;
     store.isLoading = true;
     store.hasError = false;
-    store.hasResults = false;
+    store.isOnResultView = false;
 
     render();
 }
@@ -479,8 +483,8 @@ function render() {
     isSearchStart = ${store.isSearchStart}
     isLoading = ${store.isLoading}
     hasError = ${store.hasError}
-    hasResults = ${store.hasResults}
-    isPetPage = ${store.isPetPage}`);
+    isOnResultView = ${store.isOnResultView}
+    isOnPetView = ${store.isOnPetView}`);
     if (store.isSearchStart) {
         console.log(`isSearch start, render`);
         $('.js-message').html('');
@@ -490,8 +494,8 @@ function render() {
 
         $('.js-query').html(generateBreedDropDown());
     }
-    else if(store.hasResults) {
-        console.log(`hasResults, render`);
+    else if(store.isOnResultView) {
+        console.log(`isOnResultView, render`);
         $('.js-message').html('');
         //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
         renderBreedName();
@@ -515,12 +519,12 @@ function render() {
         //renderMessages();
         $('.js-message').html(generateLoadingHtml());
     }
-    else if(store.isPetPage) {
-        console.log('isPetPage, render');
+    else if(store.isOnPetView) {
+        console.log('isOnPetView, render');
         $('.js-message').html(generatePetDetailHtml());
     }
-    else if(store.hasResults) {
-        console.log(`hasResults, render`);
+    else if(store.isOnResultView) {
+        console.log(`isOnResultView, render`);
         //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
         renderBreedName();
         renderBreedDetails();
@@ -568,8 +572,8 @@ function renderMessages() {
         console.log(`hasError, render`);
         $('.js-message').html(generateErrorHtml());
     }
-    else if(store.isPetPage) {
-        console.log('isPetPage, render');
+    else if(store.isOnPetView) {
+        console.log('isOnPetView, render');
         $('.js-message').html(generatePetDetailHtml());
     }
     else {
@@ -594,12 +598,10 @@ function handleFormSubmit() {
         event.preventDefault();
         console.log(`handleFormSubmit ran`);
 
-        saveSearchEvent();
-
         const breed = $('#query').val();
         const zip = $('#zip').val();
-        //TODO Perhaps saveSearchEvent and saveQuery can be combined
-        saveQuery(breed, zip);
+
+        saveSearchEvent(breed, zip);
 
         if(!validateBreed()) {
             console.log(`search breed invalid`);
@@ -651,7 +653,7 @@ function onYouTubeIframeAPIReady() {
         console.log(`iframe but has search error`);
         player;
     }
-    else if(!store.hasResults) {
+    else if(!store.isOnResultView) {
         console.log(`iframe but has no api results`);
         player;
     }
