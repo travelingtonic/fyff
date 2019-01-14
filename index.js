@@ -378,16 +378,16 @@ function generateBreedName() {
 }
 
 function generateErrorHtml() {
-    let err = store.error.join(`</p><p class="js-error-message">`);
-    let html = `<section role="region" class="js-error row">
-    <p class="js-error-message">${err}</p>
+    let err = store.error.join(`</p><p class="js-error-message error">`);
+    let html = `<section role="region" class="js-error row error-container">
+    <p class="js-error-message error">${err}</p>
     </section>`;
 
     return html;
 }
 
 function generateLoadingHtml() {
-    let html = `<section role="region" class="js-loading row">
+    let html = `<section role="region" class="js-loading row loading-container">
     <p class="js-loading-message">Fetching...</p>
     </section>`;
 
@@ -405,7 +405,7 @@ function generatePetDetailHtml() {
     }
     const html = `
         <div>
-            <button class="js-back-link"><< Back to Results</button>
+            <button class="js-back-link link"><< Back to Results</button>
             <img src="${store.petDetails.image}" alt="Image of ${store.petDetails.name}">
             <div>
                 <h2>Meet ${store.petDetails.name}</h2>
@@ -563,7 +563,7 @@ function renderBreedVideo() {
 }
 
 function renderMessages() {
-    destroyYouTubeVideo();
+    //destroyYouTubeVideo();
     $('.js-breed-name').html('');
     $('.js-breed-details').html('');
     $('.js-adoption-results').html('');
@@ -610,7 +610,7 @@ function handleFormSubmit() {
         else {
             if(!validateZipCode()) {
                 console.log(`search zip invalid`);
-                saveErrorEvent('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.');
+                saveErrorEvent('Your zip code must be in the format XXXXX or XXXXX-XXXX. Please try your search again.');
             }
             else {
                 console.log(`Everything's good with the search`);
