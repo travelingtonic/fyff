@@ -45,7 +45,8 @@ function createPlayer() {
 function destroyYouTubeVideo() {
     if(player !== undefined) {
         player.stopVideo();
-        $('.js-breed-video').addClass('hidden');
+        //$('.js-breed-video').addClass('hidden');
+        $('.js-breed-video').hide();
         //player.destroy();
     }
     else {
@@ -472,71 +473,10 @@ function generateResultHtml() {
 /* ********************
 HTML Render
 ******************** */
-function render() { 
-    /*render() {
-  renderMessages();
-  renderBreedDetails();
-  renderBreedVideo();
-  renderAdoptions(); 
-}*/
-    console.log(`Application state:
-    isSearchStart = ${store.isSearchStart}
-    isLoading = ${store.isLoading}
-    hasError = ${store.hasError}
-    isOnResultView = ${store.isOnResultView}
-    isOnPetView = ${store.isOnPetView}`);
-    if (store.isSearchStart) {
-        console.log(`isSearch start, render`);
-        $('.js-message').html('');
-        $('.js-breed-name').html('');
-        //$('.js-breed-video').html('');
-        $('.js-breed-details').html('');
-
-        $('.js-query').html(generateBreedDropDown());
-    }
-    else if(store.isOnResultView) {
-        console.log(`isOnResultView, render`);
-        $('.js-message').html('');
-        //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
-        renderBreedName();
-        renderBreedDetails();
-        renderBreedVideo();
-        renderAdoptions();
-
-        //$('.js-response').html(generateResponseHtml());
-    }
-    else {
-        renderMessages();
-    }
-    /*else if(store.hasError) {
-        console.log(`hasError, render`);
-        $('.js-breed-name').html('');
-        $('.js-breed-details').html('');
-        $('.js-message').html(generateErrorHtml());
-    }
-    else if(store.isLoading) {
-        //TODO will show when we're still loading. Will need to make sure you clear out any adoptions, etc html
-        //renderMessages();
-        $('.js-message').html(generateLoadingHtml());
-    }
-    else if(store.isOnPetView) {
-        console.log('isOnPetView, render');
-        $('.js-message').html(generatePetDetailHtml());
-    }
-    else if(store.isOnResultView) {
-        console.log(`isOnResultView, render`);
-        //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
-        renderBreedName();
-        renderBreedDetails();
-        renderBreedVideo();
-        renderAdoptions();
-
-        //$('.js-response').html(generateResponseHtml());
-    }
-    else {
-        console.log(`nothing to render, no change`);
-        
-    }*/
+function render() {
+    renderBreedDropDown();
+    renderMultiViewContent();
+    renderSingleViewContent();
 }
 
 function renderAdoptions() {
@@ -547,27 +487,42 @@ function renderBreedDetails() {
     $('.js-breed-details').html(generateBreedDetails());
 }
 
+function renderBreedDropDown() {
+    if (store.isSearchStart) {
+        console.log(`isSearch start, render`);
+        $('.js-query').html(generateBreedDropDown());
+    }
+    else {
+        console.log(`isSearch already started, no change to render`);
+    }
+}
+
 function renderBreedName() {
     $('.js-breed-name').html(generateBreedName());
 }
 
 function renderBreedVideo() {
-    if($('.js-breed-video').hasClass('hidden')) {
-        $('.js-breed-video').removeClass('hidden');
-        startVideo();
+    $('.js-breed-video').show();
+    startVideo();
+}
+
+function renderMultiViewContent() {
+    if(store.isOnResultView) {
+        console.log(`isOnResultView, render`);
+        renderBreedName();
+        renderBreedDetails();
+        renderBreedVideo();
+        renderAdoptions();
     }
     else {
-        $('.js-breed-video').html(`Loading...`);
-        startVideo();
+        destroyYouTubeVideo();
+        $('.js-breed-name').html('');
+        $('.js-breed-details').html('');
+        $('.js-adoption-results').html('');
     }
 }
 
-function renderMessages() {
-    destroyYouTubeVideo();
-    $('.js-breed-name').html('');
-    $('.js-breed-details').html('');
-    $('.js-adoption-results').html('');
-
+function renderSingleViewContent() {
     if(store.hasError) {
         console.log(`hasError, render`);
         $('.js-message').html(generateErrorHtml());
@@ -576,8 +531,12 @@ function renderMessages() {
         console.log('isOnPetView, render');
         $('.js-message').html(generatePetDetailHtml());
     }
-    else {
+    else if (store.isLoading) {
+        console.log('isLoading, render');
         $('.js-message').html(generateLoadingHtml());
+    }
+    else {
+        $('.js-message').html('');
     }
 }
 
