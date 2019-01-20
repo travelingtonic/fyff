@@ -626,12 +626,9 @@ function handleFormSubmit() {
                     .catch(function(err) {
                         console.log(err);
                       });*/
-                Promise.all([getAdoptions(), getBreedDetails()]).then(() => saveResultEvent())
+                Promise.all([getAdoptions(), getBreedDetails(), getYouTubeVideos()]).then(() => saveResultEvent())
                 .catch(error => {
-                    alert('Something went wrong. Try again later.')
                     console.log(error);
-            
-                    //throw(error);
                 });
             }
             /*else {
