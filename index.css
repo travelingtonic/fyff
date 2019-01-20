@@ -16,7 +16,8 @@ figcaption {
 figure {
     float: left;
     margin: 0;
-    padding-right: 15px;
+    padding-right: 5px;
+    padding-left: 5px;
 }
 
 header {
@@ -34,6 +35,30 @@ select {
     border: solid black 1px;
 }
 
+.adoption-container {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+}
+
+.adoption-item {
+    flex-basis: 25%;
+    text-align: center;
+    border: 1px dashed darkgray;
+}
+
+.breed-detail {
+    text-decoration: underline;
+}
+
+.breed-info {
+    background-color: lightgray;
+}
+
+.center {
+    text-align: center;
+}
+
 .content-container {
     margin-bottom: 5px;
     margin-top: 15px;
@@ -49,30 +74,62 @@ select {
 
 .error-container {
     background-color: lightyellow;
+    padding-left: 10px;
     margin-top: 15px;
 }
 
 .link {
     background:none!important;
-    color:inherit;
+    color:cadetblue;
     border:none; 
     padding:0!important;
-    font: inherit;
+    font-size: small;
+    font-style: italic;
     cursor: pointer;
     display: block;
-    margin-bottom: 10px;
+    margin-bottom: 30px;
     margin-top: 10px;
 }
 
 .loading-container {
-    background-color: lightblue; /*TODO: Try a background gradient*/
-}
-
-#zip {
-    border: solid black 1px;
-    border-radius: 5px;
+    background: linear-gradient(lightgray, lightblue);
+    padding-left: 10px;
+    margin-top: 15px;
 }
 
 .logo {
     height: 70px;
+}
+
+.pet-details {
+    overflow: hidden;
+}
+
+.pet-details > li {
+    padding-bottom: 0.5em;
+}
+
+.pet-page {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    padding: 10px;
+    border: gray 2px solid;
+}
+
+.pet-page-image {
+    float: left;
+    margin-right: 10px;
+}
+
+.shadow {
+    -moz-box-shadow:    3px 3px 5px 6px #ccc;
+    -webkit-box-shadow: 3px 3px 5px 6px #ccc;
+    box-shadow:         3px 3px 5px 6px #ccc;
+  }
+
+#zip {
+    border: solid black 1px;
+    border-radius: 5px;
 }

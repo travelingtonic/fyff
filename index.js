@@ -35,6 +35,7 @@ function createPlayer() {
     player = new YT.Player('breed-video', {
         height: '200',
         width: '250',
+        align: 'center',
         videoId: store.videoId,
         events: {
             'onReady': onPlayerReady
@@ -453,12 +454,12 @@ function generatePetDetailHtml() {
         breeds = store.petDetails.breed[0];
     }
     const html = `
-        <div>
+        <div class="pet-page shadow">
             <button class="js-back-link link"><< Back to Results</button>
-            <img src="${store.petDetails.image}" alt="Image of ${store.petDetails.name}">
+            <img class="pet-page-image" src="${store.petDetails.image}" alt="Image of ${store.petDetails.name}">
             <div>
                 <h2>Meet ${store.petDetails.name}</h2>
-                <ul>
+                <ul class="pet-details">
                     <li>${breeds}</li>
                     <li>${store.petDetails.age}</li>
                     <li>${store.petDetails.gender}</li>
@@ -504,16 +505,19 @@ function generateResponseHtml() {
 
 function generateResultHtml() {
     let html = `
-    <h2>Available Adoptions Near You</h2>`;
+    <h2>Available Adoptions Near You</h2>
+    <div class="adoption-container">`;
 
     for(let x = 0; x < store.adoptions.length; x ++) {
-        html += `<div>
-        <figure>
+        html += `
+        <figure class="adoption-item">
             <figcaption>${store.adoptions[x].name} - ${store.adoptions[x].gender}</figcaption>
             <input type="image" value="${store.adoptions[x].id}" class="js-pet-link" name="pet" alt="image of ${store.adoptions[x].name}" src="${store.adoptions[x].img}">
         </figure>
-    </div>`;
+    `;
     }
+
+    html += '</div>';
 
     return html;
 }
