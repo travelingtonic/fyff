@@ -177,6 +177,21 @@ function isEmpty(obj) {
     return true;
 }
 
+function parsePetBreeds(breedList) {
+    let petBreeds = [];
+    if(Array.isArray(breedList)) {
+        breedList.forEach(
+            function(arrayItem) {
+                petBreeds.push(arrayItem.$t)
+            });
+    }
+    else {
+        petBreeds.push(breedList.$t);
+    }
+
+    return petBreeds;
+}
+
 function parsePetThumbnailImage(media) {
     let thumbDetail = '';
     let thumbUrl = '';
@@ -293,21 +308,10 @@ function savePetId(id) {
 }
 
 function savePetDetails(responseJson) {
-    let petBreeds = [];
-    if(Array.isArray(responseJson.petfinder.pet.breeds.breed)) {
-        responseJson.petfinder.pet.breeds.breed.forEach(
-            function(arrayItem) {
-                petBreeds.push(arrayItem.$t)
-            });
-    }
-    else {
-        petBreeds.push(responseJson.petfinder.pet.breeds.breed.$t);
-    }
-    
     let petDetails = {
         name: responseJson.petfinder.pet.name.$t,
         image: parsePetMainImage(responseJson.petfinder.pet.media),
-        breed: petBreeds,
+        breed: parsePetBreeds(responseJson.petfinder.pet.breeds.breed),
         description: responseJson.petfinder.pet.description.$t !== undefined ? responseJson.petfinder.pet.description.$t : "I'm waiting for my forever friend. Please reach out to my contact for more info about me!",
         age: responseJson.petfinder.pet.age.$t,
         gender: translateGender(responseJson.petfinder.pet.sex.$t),
@@ -423,16 +427,16 @@ function generateBreedName() {
 }
 
 function generateErrorHtml() {
-    let err = store.error.join(`</p><p class="js-error-message">`);
-    let html = `<section role="region" class="js-error row">
-    <p class="js-error-message">${err}</p>
+    let err = store.error.join(`</p><p class="js-error-message error">`);
+    let html = `<section role="region" class="js-error row error-container">
+    <p class="js-error-message error">${err}</p>
     </section>`;
 
     return html;
 }
 
 function generateLoadingHtml() {
-    let html = `<section role="region" class="js-loading row">
+    let html = `<section role="region" class="js-loading row loading-container">
     <p class="js-loading-message">Fetching...</p>
     </section>`;
 
@@ -450,7 +454,7 @@ function generatePetDetailHtml() {
     }
     const html = `
         <div>
-            <button class="js-back-link"><< Back to Results</button>
+            <button class="js-back-link link"><< Back to Results</button>
             <img src="${store.petDetails.image}" alt="Image of ${store.petDetails.name}">
             <div>
                 <h2>Meet ${store.petDetails.name}</h2>
@@ -590,7 +594,7 @@ function renderSingleViewContent() {
 Handlers
 ******************** */
 function handleBackClick() {
-    $('.js-response').on('click', '.js-back-link', function(event) {
+    $('.js-message').on('click', '.js-back-link', function(event) {
         console.log(`handleBackClick ran`);
 
         saveBackToResultsEvent();
@@ -614,7 +618,7 @@ function handleFormSubmit() {
         else {
             if(!validateZipCode()) {
                 console.log(`search zip invalid`);
-                saveErrorEvent('Sorry, your zip code must be in the format XXXXX or XXXXX-XXXX.');
+                saveErrorEvent('Your zip code must be in the format XXXXX or XXXXX-XXXX. Please try your search again.');
             }
             else {
                 console.log(`Everything's good with the search`);
