@@ -1,5 +1,7 @@
 /* ********************
-TODO Speak to your technical decisions and tradeoffs
+Integrating the Youtube video was challenging as the iframe api controls what you can and cannot do when rendering the video. You'll see in my code that I had to split my render into multiple functions to handle rendering different sections of the views without touching the video iframe.
+
+Also, the Petfinder API presented challenges. When fetching adoption lists and pet details their api structure changes unexpectedly (it's not documented on their site). Some fields are an object in one request response and an array in another request response to the same API call. I had to add in a lot of data checking to handle their API. I covered all of the error cases that I could find while testing their API.
 ******************** */
 
 /* ********************
@@ -11,19 +13,19 @@ const videoApiKey = 'AIzaSyAPSmkC5hByWgmMFM6kZwCi_PScnMx68zk';
 let player;
 
 const store = {
-    isSearchStart: true, //true
+    isSearchStart: true,
     isLoading: false,
     hasError: false,
     hasAdoptions: false,
     isOnResultView: false,
-    isOnPetView: false, //false
+    isOnPetView: false,
     breedQuery: null,
     zipQuery: null,
     error: [],
     adoptions: [],
     breedDetails: {},
     videoId: null,
-    petId: null, //43657126
+    petId: null,
     petDetails: []
 };
 
@@ -47,9 +49,7 @@ function createPlayer() {
 function destroyYouTubeVideo() {
     if(player !== undefined) {
         player.stopVideo();
-        //$('.js-breed-video').addClass('hidden');
         $('.js-breed-video').hide();
-        //player.destroy();
     }
     else {
         $('.js-breed-video').html('');
@@ -77,7 +77,7 @@ function getAdoptions() {
         const queryString = formatQueryParams(params);
         const url = 'https://api.petfinder.com/pet.find?' + queryString + '&callback=?';
         console.log(url);
-        //Note: We're using getJSON per PetFinder's api docs re:cross-domain https://www.petfinder.com/developers/api-docs#methods
+        //Note: I'm using getJSON per PetFinder's api docs re:cross-domain support here: https://www.petfinder.com/developers/api-docs#methods
         return $.getJSON(url).then(function checkAdoptionResults(responseJson) {
             console.log(`checking for adoption results`);
             let err = '';
@@ -90,7 +90,6 @@ function getAdoptions() {
                     console.log(`We do not have adoption results`);
                     err = "Sorry, we couldn't find any adoptions. Please try another search.";
                     saveErrorEvent(err);
-                    //Promise.reject(new Error(err));
                     throw new Error(err);
                 }
             }
@@ -106,7 +105,7 @@ function getAdoptions() {
                 }
                 
             }
-        }).catch(err => {return Promise.reject(new Error(err))})  //.catch(err => {console.log(`Error on adoption get: ${err}`)})
+        }).catch(err => {return Promise.reject(new Error(err))})
 }
 
 function getBreedDetails() {
@@ -138,7 +137,7 @@ function getPetDetails() {
         const queryString = formatQueryParams(params);
         const url = 'https://api.petfinder.com/pet.get?' + queryString + '&callback=?';
         console.log(`Pet Id: ${store.petId}`);
-        //Note: We're using getJSON per PetFinder's api docs re:cross-domain https://www.petfinder.com/developers/api-docs#methods
+        //Note: I'm using getJSON per PetFinder's api docs re:cross-domain support here: https://www.petfinder.com/developers/api-docs#methods
         return $.getJSON(url).then((responseJson) => savePetDetails(responseJson))
 }
 
@@ -220,14 +219,6 @@ function parsePetMainImage(media) {
         imgUrl = imgDetail.$t;
     }
 
-    /*if(responseJson.petfinder.pets.pet.media.hasOwnProperty('photos') && responseJson.petfinder.pets.pet.media.photos !== undefined && responseJson.petfinder.pets.pet.media.photos !== null) {
-        imgDetail = responseJson.petfinder.pet.media.photos.photo.find(photo => photo["@size"] === 'pn');
-        imgUrl = imgDetail.$t;
-    }
-    else {
-        imgUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Littlebluedog.svg/64px-Littlebluedog.svg.png';
-    }*/
-
     return imgUrl;
 }
 
@@ -263,9 +254,6 @@ function saveAdoptions(responseJson) {
 
     store.adoptions = adoptList;
     store.hasAdoptions = true;
-    
-    //store.isLoading = false;
-    //store.isOnResultView = true; //TODO to move this to the breed detail save
 
     render();
 }
@@ -495,13 +483,6 @@ function generatePetDetailOptionsHtml() {
 
     return html;
 }
-/*
-function generateResponseHtml() {
-    let breedHtml = generateBreedDetails();
-    let adoptionHtml = generateResultHtml();
-    return (breedHtml + adoptionHtml);
-}
-*/
 
 function generateResultHtml() {
     let html = `
@@ -626,23 +607,12 @@ function handleFormSubmit() {
             }
             else {
                 console.log(`Everything's good with the search`);
-                /*getAdoptions();
 
-                if(store.hasAdoptions) {
-                Promise.all([getBreedDetails(),getYouTubeVideos()])
-                    .then(() => saveResultEvent())
-                    .catch(function(err) {
-                        console.log(err);
-                      });*/
                 Promise.all([getAdoptions(), getBreedDetails(), getYouTubeVideos()]).then(() => saveResultEvent())
                 .catch(error => {
                     console.log(error);
                 });
             }
-            /*else {
-                console.log(`No adoptions to show so not re-rendering`);
-            }
-        }*/
         }
     });
 }
@@ -689,5 +659,5 @@ $(function() {
     handlePetClick();
     handleBackClick();
 
-    render(); //TODO: Create a default state for render (requires defaulting all set stores) so that we don't need the isSearchStart state.
+    render();
 });
