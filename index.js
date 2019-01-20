@@ -14,6 +14,7 @@ const store = {
     isSearchStart: true, //true
     isLoading: false,
     hasError: false,
+    hasAdoptions: false,
     isOnResultView: false,
     isOnPetView: false, //false
     breedQuery: null,
@@ -45,7 +46,8 @@ function createPlayer() {
 function destroyYouTubeVideo() {
     if(player !== undefined) {
         player.stopVideo();
-        $('.js-breed-video').addClass('hidden');
+        //$('.js-breed-video').addClass('hidden');
+        $('.js-breed-video').hide();
         //player.destroy();
     }
     else {
@@ -67,7 +69,7 @@ function getAdoptions() {
             key: petFinderApiKey,
             format: "json",
             output: "basic",
-            count: "10",
+            count: "20",
             breed: query,
             location: store.zipQuery
         };
@@ -85,8 +87,10 @@ function getAdoptions() {
                 }
                 else {
                     console.log(`We do not have adoption results`);
-                    err = 'Sorry, we had trouble retrieving adoptions. Please try again.';
+                    err = "Sorry, we couldn't find any adoptions. Please try another search.";
                     saveErrorEvent(err);
+                    //Promise.reject(new Error(err));
+                    throw new Error(err);
                 }
             }
             else {
@@ -101,7 +105,7 @@ function getAdoptions() {
                 }
                 
             }
-        })
+        }).catch(err => {return Promise.reject(new Error(err))})  //.catch(err => {console.log(`Error on adoption get: ${err}`)})
 }
 
 function getBreedDetails() {
@@ -165,30 +169,84 @@ function getYouTubeVideos() {
         });
 }
 
-function parsePetThumbnailImage(responseJson) {
-    const thumbDetail = responseJson.petfinder.pets.pet.media.photos.photo.find(photo => photo["@size"] === 'fpm');
-    const thumbObj = thumbDetail.$t;
-
-    return thumbObj;
+function isEmpty(obj) {
+    for(var key in obj) {
+        if(obj.hasOwnProperty(key))
+            return false;
+    }
+    return true;
 }
 
-function parsePetMainImage(responseJson) {
-    const imgDetail = responseJson.petfinder.pet.media.photos.photo.find(photo => photo["@size"] === 'pn');
-    const imgUrl = imgDetail.$t;
+function parsePetThumbnailImage(media) {
+    let thumbDetail = '';
+    let thumbUrl = '';
+
+    if(isEmpty(media)) {
+        thumbUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Littlebluedog.svg/64px-Littlebluedog.svg.png';
+      }
+      else {
+        thumbDetail = media.photos.photo.find(photo => photo["@size"] === 'fpm');
+        thumbUrl = thumbDetail.$t;
+      }
+
+    return thumbUrl;
+}
+
+function parsePetMainImage(media) {
+    let imgDetail = '';
+    let imgUrl = '';
+
+    if(isEmpty(media)) {
+        imgUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Littlebluedog.svg/64px-Littlebluedog.svg.png';
+    }
+    else {
+        imgDetail = media.photos.photo.find(photo => photo["@size"] === 'pn');
+        imgUrl = imgDetail.$t;
+    }
+
+    /*if(responseJson.petfinder.pets.pet.media.hasOwnProperty('photos') && responseJson.petfinder.pets.pet.media.photos !== undefined && responseJson.petfinder.pets.pet.media.photos !== null) {
+        imgDetail = responseJson.petfinder.pet.media.photos.photo.find(photo => photo["@size"] === 'pn');
+        imgUrl = imgDetail.$t;
+    }
+    else {
+        imgUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Littlebluedog.svg/64px-Littlebluedog.svg.png';
+    }*/
 
     return imgUrl;
+}
+
+function parsePetOptions(optionList) {
+    let petOptions = [];
+    if(Array.isArray(optionList)) {
+        optionList.forEach(
+            function(arrayItem) {
+                petOptions.push(arrayItem.$t)
+            }
+        );
+    }
+    else {
+        if(isEmpty(optionList)) {
+            petOptions.push(`none`);
+        }
+        else {
+            petOptions.push(optionList.$t);
+        }
+    }
+
+    return petOptions;
 }
 
 function saveAdoptions(responseJson) {
     const adoptList = responseJson.petfinder.pets.pet.map(x => ({
         name: x.name.$t,
-        img: x.media.photos.photo[1].$t,
+        img: parsePetThumbnailImage(x.media),
         gender: translateGender(x.sex.$t),
         id: x.id.$t
     }))
     console.log(adoptList);
 
     store.adoptions = adoptList;
+    store.hasAdoptions = true;
     
     //store.isLoading = false;
     //store.isOnResultView = true; //TODO to move this to the breed detail save
@@ -221,6 +279,7 @@ function saveBreedDetails(responseJson) {
 
 function saveErrorEvent(err) {
     store.isLoading = false;
+    store.hasAdoptions = false;
     store.hasError = true;
     store.error.push(err);
 
@@ -230,7 +289,7 @@ function saveErrorEvent(err) {
 function savePetId(id) {
     store.petId = id;
 
-    //render();
+    render();
 }
 
 function savePetDetails(responseJson) {
@@ -245,30 +304,16 @@ function savePetDetails(responseJson) {
         petBreeds.push(responseJson.petfinder.pet.breeds.breed.$t);
     }
     
-    
-    let petOptions = [];
-    if(Array.isArray(responseJson.petfinder.pet.options.option)) {
-        responseJson.petfinder.pet.options.option.forEach(
-            function(arrayItem) {
-                petOptions.push(arrayItem.$t)
-            }
-        );
-    }
-    else {
-        petOptions.push(responseJson.petfinder.pet.options.option.$t);
-    }
-    
-    
     let petDetails = {
         name: responseJson.petfinder.pet.name.$t,
-        image: parsePetMainImage(responseJson),
+        image: parsePetMainImage(responseJson.petfinder.pet.media),
         breed: petBreeds,
-        description: responseJson.petfinder.pet.description.$t,
+        description: responseJson.petfinder.pet.description.$t !== undefined ? responseJson.petfinder.pet.description.$t : "I'm waiting for my forever friend. Please reach out to my contact for more info about me!",
         age: responseJson.petfinder.pet.age.$t,
         gender: translateGender(responseJson.petfinder.pet.sex.$t),
-        options: petOptions,
-        contactEmail: responseJson.petfinder.pet.contact.email.$t,
-        contactPhone: responseJson.petfinder.pet.contact.phone.$t
+        options: parsePetOptions(responseJson.petfinder.pet.options.option),
+        contactEmail: responseJson.petfinder.pet.contact.email.$t !== undefined ? responseJson.petfinder.pet.contact.email.$t : 'Not Provided',
+        contactPhone: responseJson.petfinder.pet.contact.phone.$t !== undefined ? responseJson.petfinder.pet.contact.phone.$t : 'Not Provided'
     };
 
     console.log(petDetails.gender);
@@ -419,7 +464,7 @@ function generatePetDetailHtml() {
             <p>${store.petDetails.description}</p>
             <h2>Contact Information</h2>
             <ul>
-                <li>Phone Number: ${store.petDetails.contactPhone !== undefined ? store.petDetails.contactPhone : 'Not Provided'}</li>
+                <li>Phone Number: ${store.petDetails.contactPhone}</li>
                 <li>Email Address: ${store.petDetails.contactEmail !== undefined ? store.petDetails.contactEmail : 'Not Provided'}</li>
             </ul>
         </div>
@@ -433,6 +478,7 @@ function generatePetDetailOptionsHtml() {
     let html = '';
     
     homeDetails.forEach(function(value, index) {
+        if (value === 'none') store.petDetails.options[index] = '<li>Find out more about me from my contact below!</li>';
         if (value === 'housetrained') store.petDetails.options[index] = '<li>House-trained: Yes</li>';
         if (value === 'altered') store.petDetails.options[index] = '<li>Spayed/Neutered: Yes</li>';
         if (value === 'hasShots') store.petDetails.options[index] = '<li>Health: Vaccinations up to date</li>';
@@ -472,71 +518,10 @@ function generateResultHtml() {
 /* ********************
 HTML Render
 ******************** */
-function render() { 
-    /*render() {
-  renderMessages();
-  renderBreedDetails();
-  renderBreedVideo();
-  renderAdoptions(); 
-}*/
-    console.log(`Application state:
-    isSearchStart = ${store.isSearchStart}
-    isLoading = ${store.isLoading}
-    hasError = ${store.hasError}
-    isOnResultView = ${store.isOnResultView}
-    isOnPetView = ${store.isOnPetView}`);
-    if (store.isSearchStart) {
-        console.log(`isSearch start, render`);
-        $('.js-message').html('');
-        $('.js-breed-name').html('');
-        //$('.js-breed-video').html('');
-        $('.js-breed-details').html('');
-
-        $('.js-query').html(generateBreedDropDown());
-    }
-    else if(store.isOnResultView) {
-        console.log(`isOnResultView, render`);
-        $('.js-message').html('');
-        //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
-        renderBreedName();
-        renderBreedDetails();
-        renderBreedVideo();
-        renderAdoptions();
-
-        //$('.js-response').html(generateResponseHtml());
-    }
-    else {
-        renderMessages();
-    }
-    /*else if(store.hasError) {
-        console.log(`hasError, render`);
-        $('.js-breed-name').html('');
-        $('.js-breed-details').html('');
-        $('.js-message').html(generateErrorHtml());
-    }
-    else if(store.isLoading) {
-        //TODO will show when we're still loading. Will need to make sure you clear out any adoptions, etc html
-        //renderMessages();
-        $('.js-message').html(generateLoadingHtml());
-    }
-    else if(store.isOnPetView) {
-        console.log('isOnPetView, render');
-        $('.js-message').html(generatePetDetailHtml());
-    }
-    else if(store.isOnResultView) {
-        console.log(`isOnResultView, render`);
-        //TODO renderBreedDetails(), renderAdoption(), rednerBreedVideo()**this one is special. The div already exists in html.
-        renderBreedName();
-        renderBreedDetails();
-        renderBreedVideo();
-        renderAdoptions();
-
-        //$('.js-response').html(generateResponseHtml());
-    }
-    else {
-        console.log(`nothing to render, no change`);
-        
-    }*/
+function render() {
+    renderBreedDropDown();
+    renderMultiViewContent();
+    renderSingleViewContent();
 }
 
 function renderAdoptions() {
@@ -547,27 +532,42 @@ function renderBreedDetails() {
     $('.js-breed-details').html(generateBreedDetails());
 }
 
+function renderBreedDropDown() {
+    if (store.isSearchStart) {
+        console.log(`isSearch start, render`);
+        $('.js-query').html(generateBreedDropDown());
+    }
+    else {
+        console.log(`isSearch already started, no change to render`);
+    }
+}
+
 function renderBreedName() {
     $('.js-breed-name').html(generateBreedName());
 }
 
 function renderBreedVideo() {
-    if($('.js-breed-video').hasClass('hidden')) {
-        $('.js-breed-video').removeClass('hidden');
-        startVideo();
+    $('.js-breed-video').show();
+    startVideo();
+}
+
+function renderMultiViewContent() {
+    if(store.isOnResultView) {
+        console.log(`isOnResultView, render`);
+        renderBreedName();
+        renderBreedDetails();
+        renderBreedVideo();
+        renderAdoptions();
     }
     else {
-        $('.js-breed-video').html(`Loading...`);
-        startVideo();
+        destroyYouTubeVideo();
+        $('.js-breed-name').html('');
+        $('.js-breed-details').html('');
+        $('.js-adoption-results').html('');
     }
 }
 
-function renderMessages() {
-    destroyYouTubeVideo();
-    $('.js-breed-name').html('');
-    $('.js-breed-details').html('');
-    $('.js-adoption-results').html('');
-
+function renderSingleViewContent() {
     if(store.hasError) {
         console.log(`hasError, render`);
         $('.js-message').html(generateErrorHtml());
@@ -576,8 +576,12 @@ function renderMessages() {
         console.log('isOnPetView, render');
         $('.js-message').html(generatePetDetailHtml());
     }
-    else {
+    else if (store.isLoading) {
+        console.log('isLoading, render');
         $('.js-message').html(generateLoadingHtml());
+    }
+    else {
+        $('.js-message').html('');
     }
 }
 
@@ -614,11 +618,26 @@ function handleFormSubmit() {
             }
             else {
                 console.log(`Everything's good with the search`);
-                Promise.all([getAdoptions(), getBreedDetails(),getYouTubeVideos()])
-                    .then()
-                    .then(() => saveResultEvent());
-                //Promise.all([getAdoptions(), getBreedDetails()]).then(() => saveResultEvent());
+                /*getAdoptions();
+
+                if(store.hasAdoptions) {
+                Promise.all([getBreedDetails(),getYouTubeVideos()])
+                    .then(() => saveResultEvent())
+                    .catch(function(err) {
+                        console.log(err);
+                      });*/
+                Promise.all([getAdoptions(), getBreedDetails()]).then(() => saveResultEvent())
+                .catch(error => {
+                    alert('Something went wrong. Try again later.')
+                    console.log(error);
+            
+                    //throw(error);
+                });
             }
+            /*else {
+                console.log(`No adoptions to show so not re-rendering`);
+            }
+        }*/
         }
     });
 }
