@@ -16,7 +16,6 @@ const store = {
     isSearchStart: true,
     isLoading: false,
     hasError: false,
-    hasAdoptions: false,
     isOnResultView: false,
     isOnPetView: false,
     breedQuery: null,
@@ -125,7 +124,17 @@ function getPetDetails() {
         const url = 'https://api.petfinder.com/pet.get?' + queryString + '&callback=?';
 
         //Note: I'm using getJSON per PetFinder's api docs re:cross-domain support here: https://www.petfinder.com/developers/api-docs#methods
-        return $.getJSON(url).then((responseJson) => savePetDetails(responseJson))
+        return $.getJSON(url).then((responseJson) => checkPetDetails(responseJson))
+}
+
+function checkPetDetails(responseJson) {
+    if(responseJson.petfinder.hasOwnProperty('pet')) {
+        savePetDetails(responseJson);
+    }
+    else {
+        err = `${responseJson.petfinder.header.status.message.$t}. Please try another.`;
+        saveErrorEvent(err);
+    }
 }
 
 function getYouTubeVideos() {
@@ -228,16 +237,42 @@ function parsePetOptions(optionList) {
     return petOptions;
 }
 
+function parsePetAdoptions(pet) {
+    if(Array.isArray(pet)) {
+        breedList.forEach(
+            function(arrayItem) {
+                petBreeds.push(arrayItem.$t)
+            });
+    }
+    else {
+        petBreeds.push(breedList.$t);
+    }
+}
+
 function saveAdoptions(responseJson) {
-    const adoptList = responseJson.petfinder.pets.pet.map(x => ({
+    const petList = responseJson.petfinder.pets.pet;
+    let adoptList = [];
+    
+    if(Array.isArray(petList)) {
+        adoptList = petList.map(x => ({
         name: x.name.$t,
         img: parsePetThumbnailImage(x.media),
         gender: translateGender(x.sex.$t),
         id: x.id.$t
     }))
-
+}
+else {
+    adoptList = [{
+        name: petList.name.$t,
+        img: parsePetThumbnailImage(petList.media),
+        gender: translateGender(petList.sex.$t),
+        id: petList.id.$t
+    }]; 
+}
     store.adoptions = adoptList;
-    store.hasAdoptions = true;
+
+    store.isLoading = false;
+    store.isOnResultView = true;
 
     render();
 }
@@ -267,7 +302,9 @@ function saveBreedDetails(responseJson) {
 
 function saveErrorEvent(err) {
     store.isLoading = false;
-    store.hasAdoptions = false;
+    store.isOnResultView = false;
+    store.isOnPetView = false;
+    
     store.hasError = true;
     store.error.push(err);
 
