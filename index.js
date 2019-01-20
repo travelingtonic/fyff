@@ -360,6 +360,7 @@ function saveSearchEvent(breed, zip) {
     store.isLoading = true;
     store.hasError = false;
     store.isOnResultView = false;
+    store.isOnPetView = false;
 
     render();
 }
@@ -524,6 +525,7 @@ function generateResultHtml() {
 HTML Render
 ******************** */
 function render() {
+    window.scrollTo(0,0);
     renderBreedDropDown();
     renderMultiViewContent();
     renderSingleViewContent();
