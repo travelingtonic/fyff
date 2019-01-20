@@ -43,7 +43,6 @@ function createPlayer() {
             'onReady': onPlayerReady
         }
     });
-    console.log('player created');
 }
 
 function destroyYouTubeVideo() {
@@ -59,12 +58,10 @@ function destroyYouTubeVideo() {
 function formatQueryParams(params) {
     const queryItems = Object.keys(params)
       .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-      console.log(queryItems);
     return queryItems.join('&');
   }
 
 function getAdoptions() {
-    console.log(`getAdoptions ran`);
     const query = BREEDS[store.breedQuery].adoptionBreed;
         const params = {
             key: petFinderApiKey,
@@ -76,25 +73,20 @@ function getAdoptions() {
         };
         const queryString = formatQueryParams(params);
         const url = 'https://api.petfinder.com/pet.find?' + queryString + '&callback=?';
-        console.log(url);
         //Note: I'm using getJSON per PetFinder's api docs re:cross-domain support here: https://www.petfinder.com/developers/api-docs#methods
         return $.getJSON(url).then(function checkAdoptionResults(responseJson) {
-            console.log(`checking for adoption results`);
             let err = '';
             if(responseJson.petfinder.hasOwnProperty('pets')) {
                 if(responseJson.petfinder.pets.hasOwnProperty('pet') && responseJson.petfinder.pets.pet !== undefined && responseJson.petfinder.pets.pet !== null) {
-                    console.log(`We have adoption records`);
                     saveAdoptions(responseJson);
                 }
                 else {
-                    console.log(`We do not have adoption results`);
                     err = "Sorry, we couldn't find any adoptions. Please try another search.";
                     saveErrorEvent(err);
                     throw new Error(err);
                 }
             }
             else {
-                console.log(`We do not have adoption results`);
                 if(responseJson.petfinder.hasOwnProperty('header')) {
                     err = `${responseJson.petfinder.header.status.message.$t}. Please try again.`;
                     saveErrorEvent(err);
@@ -109,7 +101,6 @@ function getAdoptions() {
 }
 
 function getBreedDetails() {
-    console.log(`getBreedDetails ran`);
     const url = `https://api.thedogapi.com/v1/breeds/${BREEDS[store.breedQuery].breedDetailId}`;
     const options = {
     headers: new Headers({
@@ -120,15 +111,11 @@ function getBreedDetails() {
     .then(response => response.status >= 400 ? Promise.reject('server error') : response.json())
     .then(responseJson => saveBreedDetails(responseJson))
     .catch(error => {
-        alert('Something went wrong. Try again later.')
-        console.log(error);
-
         throw(error);
     });
 }
 
 function getPetDetails() {
-    console.log(`getPetDetails ran`);
         const params = {
             key: petFinderApiKey,
             format: "json",
@@ -136,13 +123,12 @@ function getPetDetails() {
         };
         const queryString = formatQueryParams(params);
         const url = 'https://api.petfinder.com/pet.get?' + queryString + '&callback=?';
-        console.log(`Pet Id: ${store.petId}`);
+
         //Note: I'm using getJSON per PetFinder's api docs re:cross-domain support here: https://www.petfinder.com/developers/api-docs#methods
         return $.getJSON(url).then((responseJson) => savePetDetails(responseJson))
 }
 
 function getYouTubeVideos() {
-    console.log(`getYouTubeVideos ran`);
     const videoQuery = 'dogs 101 facts ' + BREEDS[store.breedQuery].adoptionBreed;
     const params = {
         key: videoApiKey,
@@ -155,7 +141,6 @@ function getYouTubeVideos() {
     const queryString = formatQueryParams(params)
     const url = 'https://www.googleapis.com/youtube/v3/search' + '?' + queryString;
   
-    console.log(url);
     return fetch(url)
         .then(response => {
             if (response.ok) {
@@ -250,7 +235,6 @@ function saveAdoptions(responseJson) {
         gender: translateGender(x.sex.$t),
         id: x.id.$t
     }))
-    console.log(adoptList);
 
     store.adoptions = adoptList;
     store.hasAdoptions = true;
@@ -309,7 +293,6 @@ function savePetDetails(responseJson) {
         contactPhone: responseJson.petfinder.pet.contact.phone.$t !== undefined ? responseJson.petfinder.pet.contact.phone.$t : 'Not Provided'
     };
 
-    console.log(petDetails.gender);
     store.petDetails = petDetails;
 
     store.isOnResultView = false;
@@ -346,21 +329,17 @@ function saveSearchEvent(breed, zip) {
 
 function saveVideoId(responseJson) {
     store.videoId = responseJson.items[0].id.videoId;
-    console.log(`saved video: ${store.videoId}`);
 
     render();
 }
 
 function startVideo() {
-    console.log(`startVideo ran`);
     if (player !== undefined) {
         var x = new String(store.videoId);
         player.loadVideoById(x);
-        console.log('Player defined');
     }
     else {
         var tag = document.createElement('script');
-        console.log('Player undefined');
 
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -523,11 +502,7 @@ function renderBreedDetails() {
 
 function renderBreedDropDown() {
     if (store.isSearchStart) {
-        console.log(`isSearch start, render`);
         $('.js-query').html(generateBreedDropDown());
-    }
-    else {
-        console.log(`isSearch already started, no change to render`);
     }
 }
 
@@ -542,7 +517,6 @@ function renderBreedVideo() {
 
 function renderMultiViewContent() {
     if(store.isOnResultView) {
-        console.log(`isOnResultView, render`);
         renderBreedName();
         renderBreedDetails();
         renderBreedVideo();
@@ -558,15 +532,12 @@ function renderMultiViewContent() {
 
 function renderSingleViewContent() {
     if(store.hasError) {
-        console.log(`hasError, render`);
         $('.js-message').html(generateErrorHtml());
     }
     else if(store.isOnPetView) {
-        console.log('isOnPetView, render');
         $('.js-message').html(generatePetDetailHtml());
     }
     else if (store.isLoading) {
-        console.log('isLoading, render');
         $('.js-message').html(generateLoadingHtml());
     }
     else {
@@ -580,8 +551,6 @@ Handlers
 ******************** */
 function handleBackClick() {
     $('.js-message').on('click', '.js-back-link', function(event) {
-        console.log(`handleBackClick ran`);
-
         saveBackToResultsEvent();
     });
 }
@@ -589,7 +558,6 @@ function handleBackClick() {
 function handleFormSubmit() {
     $('form').submit(event => {
         event.preventDefault();
-        console.log(`handleFormSubmit ran`);
 
         const breed = $('#query').val();
         const zip = $('#zip').val();
@@ -597,17 +565,13 @@ function handleFormSubmit() {
         saveSearchEvent(breed, zip);
 
         if(!validateBreed()) {
-            console.log(`search breed invalid`);
             saveErrorEvent('Sorry, something went wrong. Please try your search again.');
         }
         else {
             if(!validateZipCode()) {
-                console.log(`search zip invalid`);
                 saveErrorEvent('Your zip code must be in the format XXXXX or XXXXX-XXXX. Please try your search again.');
             }
             else {
-                console.log(`Everything's good with the search`);
-
                 Promise.all([getAdoptions(), getBreedDetails(), getYouTubeVideos()]).then(() => saveResultEvent())
                 .catch(error => {
                     console.log(error);
@@ -619,33 +583,25 @@ function handleFormSubmit() {
 
 function handlePetClick() {
     $('.js-response').on('click', '.js-pet-link', function(event) {
-        console.log(`handlePetClick ran`);
-        
         const pet = $(this).val();
 
         savePetId(pet);
-
         getPetDetails();
       });
 }
 
 function onPlayerReady(event) {
-    console.log(`onPlayerReady ran`);
     event.target.playVideo();
 }
 
 function onYouTubeIframeAPIReady() {
-    console.log(`onYouTubeIframeAPIReady ran`);
     if(store.hasError) {
-        console.log(`iframe but has search error`);
         player;
     }
     else if(!store.isOnResultView) {
-        console.log(`iframe but has no api results`);
         player;
     }
     else {
-        console.log('iframe and no errors, creating player');
         createPlayer();
     }
 }
